@@ -1,0 +1,375 @@
+.ab-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Registry cards ─────────────────────────────────────────────────────────── */
+
+.ab-registry {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.ab-agent-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 10px;
+  background: var(--color-white);
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ab-agent-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-muted, rgba(79, 70, 229, 0.08));
+}
+
+.ab-agent-card-active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-bg, rgba(79, 70, 229, 0.04));
+}
+
+.ab-card-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-accent-bg, rgba(79, 70, 229, 0.08));
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ab-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ab-card-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate-900);
+  margin-bottom: 2px;
+}
+
+.ab-card-desc {
+  font-size: 11.5px;
+  color: var(--color-slate-500);
+  line-height: 1.4;
+}
+
+.ab-card-run {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--color-slate-200);
+  background: var(--color-white);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ab-agent-card:hover .ab-card-run {
+  opacity: 1;
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────────── */
+
+.ab-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--color-slate-100);
+}
+
+.ab-table-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate-700);
+  display: flex;
+  align-items: center;
+}
+
+.ab-table-scroll {
+  overflow-x: auto;
+}
+
+.ab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.ab-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-slate-500);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-slate-100);
+  white-space: nowrap;
+}
+
+.ab-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-slate-50);
+  vertical-align: middle;
+}
+
+.ab-trace-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.ab-trace-row:hover {
+  background: var(--color-slate-50);
+}
+
+.ab-trace-detail td {
+  padding: 0;
+  border-bottom: 1px solid var(--color-slate-100);
+}
+
+.ab-toggle-cell {
+  color: var(--color-slate-400);
+  width: 28px;
+}
+
+/* ── Badges / chips ─────────────────────────────────────────────────────────── */
+
+.ab-agent-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: var(--color-accent-bg, rgba(79, 70, 229, 0.08));
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.ab-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-slate-600);
+  font-size: 12px;
+}
+
+.ab-mono {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11.5px;
+}
+
+.ab-muted {
+  color: var(--color-slate-400);
+}
+
+/* ── JSON output ────────────────────────────────────────────────────────────── */
+
+.ab-json {
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 11.5px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  background: var(--color-slate-50);
+  color: var(--color-slate-700);
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+
+.ab-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-slate-500);
+  font-size: 13.5px;
+}
+
+/* ── Invoke modal ───────────────────────────────────────────────────────────── */
+
+.ab-invoke-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ab-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-slate-600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+.ab-fill-example {
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.ab-fill-example:hover {
+  opacity: 0.75;
+}
+
+.ab-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--color-white);
+  color: var(--color-slate-800);
+  outline: none;
+}
+
+.ab-select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-muted, rgba(79, 70, 229, 0.12));
+}
+
+.ab-json-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 6px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  resize: vertical;
+  background: var(--color-slate-50);
+  color: var(--color-slate-800);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ab-json-input:focus {
+  border-color: var(--color-accent);
+  background: var(--color-white);
+}
+
+.ab-parse-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-danger, #dc2626);
+  padding: 6px 0;
+}
+
+.ab-invoke-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.ab-invoke-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(220, 38, 38, 0.06);
+  color: var(--color-danger, #dc2626);
+  font-size: 12.5px;
+}
+
+.ab-invoke-result {
+  border-top: 1px solid var(--color-slate-100);
+  padding-top: 12px;
+}
+
+.ab-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px 8px;
+  font-size: 12px;
+  color: var(--color-slate-500);
+}
+
+/* ── Pipeline agent cards ────────────────────────────────────────────────────── */
+
+.ab-pipeline-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--color-accent-light, #e0f2fe);
+  color: var(--color-accent, #0369a1);
+  letter-spacing: 0.02em;
+  margin-top: 4px;
+}
+
+/* ── Registry section divider ────────────────────────────────────────────────── */
+
+.ab-registry-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px 2px;
+}
+
+.ab-registry-divider span {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-slate-400);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.ab-registry-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-slate-200);
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────────── */
+
+@keyframes ab-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ab-spin {
+  animation: ab-spin 0.8s linear infinite;
+}

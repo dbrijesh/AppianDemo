@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MGP Platform — Solution Architecture</title>
+<style>
+  :root {
+    --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3350;
+    --accent:#6366f1;--accent2:#22d3ee;--green:#22c55e;--amber:#f59e0b;
+    --rose:#f43f5e;--purple:#a855f7;--teal:#14b8a6;--orange:#f97316;
+    --text:#e2e8f0;--muted:#94a3b8;--dim:#475569;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;line-height:1.5}
+  /* HEADER */
+  .hdr{background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 60%,#0c4a6e 100%);padding:40px 48px 32px;border-bottom:1px solid var(--border)}
+  .hdr-title{font-size:28px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(90deg,#818cf8,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .hdr-sub{color:var(--muted);margin-top:6px;font-size:14px}
+  .hdr-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px}
+  .badge-blue  {background:#1e3a8a44;border:1px solid #3b82f6aa;color:#93c5fd}
+  .badge-green {background:#14532d44;border:1px solid #22c55eaa;color:#86efac}
+  .badge-purple{background:#4c1d9544;border:1px solid #a855f7aa;color:#d8b4fe}
+  .badge-amber {background:#78350f44;border:1px solid #f59e0baa;color:#fde68a}
+  .badge-cyan  {background:#164e6344;border:1px solid #22d3eeaa;color:#a5f3fc}
+  .badge-rose  {background:#88133744;border:1px solid #f43f5eaa;color:#fda4af}
+  /* LAYOUT */
+  .page{max-width:1600px;margin:0 auto;padding:32px 32px 80px}
+  .section{margin-bottom:40px}
+  .section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+  .layer{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 24px;position:relative;overflow:hidden}
+  .layer::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
+  .layer-client::before  {background:linear-gradient(90deg,#6366f1,#818cf8)}
+  .layer-gateway::before {background:linear-gradient(90deg,#14b8a6,#22d3ee)}
+  .layer-svc::before     {background:linear-gradient(90deg,#f97316,#f59e0b)}
+  .layer-agent::before   {background:linear-gradient(90deg,#a855f7,#ec4899)}
+  .layer-sidecar::before {background:linear-gradient(90deg,#0ea5e9,#6366f1)}
+  .layer-data::before    {background:linear-gradient(90deg,#22c55e,#16a34a)}
+  .layer-infra::before   {background:linear-gradient(90deg,#0ea5e9,#6366f1)}
+  .layer-obs::before     {background:linear-gradient(90deg,#f43f5e,#f97316)}
+  .layer-cicd::before    {background:linear-gradient(90deg,#8b5cf6,#6366f1)}
+  .layer-label{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px}
+  /* GRIDS */
+  .comp-grid{display:grid;gap:10px}
+  .g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+  .g6{grid-template-columns:repeat(6,1fr)}.g7{grid-template-columns:repeat(7,1fr)}
+  .gauto{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  /* COMP CARD */
+  .comp{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .18s;position:relative}
+  .comp:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px #6366f120}
+  .comp-icon{font-size:20px;margin-bottom:6px}
+  .comp-name{font-weight:700;font-size:12px;color:var(--text)}
+  .comp-tech{font-size:11px;color:var(--accent2);margin-top:2px;font-weight:600}
+  .comp-desc{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .comp-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .tag{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600}
+  .tag-blue  {background:#1e3a8a33;color:#93c5fd;border:1px solid #3b82f633}
+  .tag-green {background:#14532d33;color:#86efac;border:1px solid #22c55e33}
+  .tag-purple{background:#4c1d9533;color:#d8b4fe;border:1px solid #a855f733}
+  .tag-amber {background:#78350f33;color:#fde68a;border:1px solid #f59e0b33}
+  .tag-rose  {background:#88133733;color:#fda4af;border:1px solid #f43f5e33}
+  .tag-cyan  {background:#164e6333;color:#a5f3fc;border:1px solid #22d3ee33}
+  .tag-teal  {background:#134e4a33;color:#99f6e4;border:1px solid #14b8a633}
+  .tag-orange{background:#7c2d1233;color:#fdba74;border:1px solid #f9731633}
+  /* SERVICE CARD */
+  .svc-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;transition:all .18s;cursor:pointer}
+  .svc-card:hover{border-color:var(--accent);box-shadow:0 8px 28px #6366f122;transform:translateY(-2px)}
+  .svc-accent{position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:12px 0 0 12px}
+  .svc-name{font-weight:700;font-size:13px;margin-bottom:2px}
+  .svc-port{font-size:10px;color:var(--dim);font-family:monospace}
+  .svc-tech-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+  .svc-desc{font-size:11px;color:var(--muted);line-height:1.5}
+  .endpoint{font-size:10px;font-family:monospace;padding:2px 6px;border-radius:4px;display:inline-block;margin:2px}
+  .endpoint.get {background:#0c4a6e33;color:#7dd3fc}
+  .endpoint.post{background:#14532d33;color:#86efac}
+  .endpoint.put {background:#78350f33;color:#fde68a}
+  /* DATA STORE */
+  .ds-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .ds-schema{margin-top:8px;background:#0f172a;border-radius:6px;padding:8px;font-family:monospace;font-size:10px;color:#94a3b8;line-height:1.8}
+  /* INFRA CARD */
+  .infra-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .infra-title{font-weight:700;font-size:12px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .infra-list{list-style:none}
+  .infra-list li{font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:6px}
+  .infra-list li:last-child{border-bottom:none}
+  .infra-list li::before{content:'▸';color:var(--accent);flex-shrink:0;margin-top:1px}
+  /* TABLE */
+  .conn-table{width:100%;border-collapse:collapse;font-size:11px}
+  .conn-table th{text-align:left;padding:8px 12px;background:var(--surface2);color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)}
+  .conn-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+  .conn-table tr:hover td{background:var(--surface2)}
+  .method{font-family:monospace;font-size:10px;padding:1px 5px;border-radius:3px;font-weight:700}
+  .m-rest{background:#1e3a8a55;color:#93c5fd}
+  .m-event{background:#4c1d9555;color:#d8b4fe}
+  .m-grpc{background:#134e4a55;color:#99f6e4}
+  .m-sql{background:#78350f55;color:#fde68a}
+  /* SECURITY */
+  .sec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .sec-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .sec-title{font-weight:700;font-size:12px;color:var(--rose);margin-bottom:8px;display:flex;gap:6px;align-items:center}
+  .sec-item{font-size:11px;color:var(--muted);padding:3px 0}
+  /* FLOW */
+  .flow-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .flow-node{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;white-space:nowrap}
+  .flow-arrow{color:var(--dim);font-size:16px;flex-shrink:0}
+  /* ACCORDION */
+  details{margin-bottom:8px}
+  summary{cursor:pointer;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-weight:600;font-size:12px;list-style:none;display:flex;align-items:center;gap:8px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:'▶';font-size:9px;color:var(--accent);transition:transform .15s}
+  details[open] summary::before{transform:rotate(90deg)}
+  details[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+  .detail-body{border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:14px;background:var(--surface2)}
+  .detail-kv{display:flex;gap:8px;margin-bottom:4px}
+  .detail-k{color:var(--dim);width:130px;flex-shrink:0;font-size:11px}
+  .detail-v{color:var(--text);font-family:monospace;font-size:11px}
+  /* LEGEND */
+  .legend{display:flex;gap:20px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--muted)}
+  .legend-item{display:flex;align-items:center;gap:6px}
+  .legend-dot{width:10px;height:10px;border-radius:50%}
+  /* SIDECAR POD DIAGRAM */
+  .pod-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .pod{border:2px dashed var(--border);border-radius:14px;padding:14px;position:relative;background:#12151e}
+  .pod-label{position:absolute;top:-10px;left:14px;background:#12151e;padding:0 8px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+  .pod-inner{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .pod-main{grid-column:1/-1;background:linear-gradient(135deg,#1e3a8a22,#4f46e522);border:1px solid #6366f1;border-radius:10px;padding:10px 12px}
+  .pod-main-name{font-weight:700;font-size:12px;color:#93c5fd}
+  .pod-main-sub{font-size:10px;color:var(--muted);margin-top:2px}
+  .sidecar{border-radius:8px;padding:8px 10px;font-size:11px}
+  .sc-envoy  {background:#0c4a6e22;border:1px solid #0ea5e9;color:#7dd3fc}
+  .sc-vault  {background:#78350f22;border:1px solid #f59e0b;color:#fde68a}
+  .sc-otel   {background:#4c1d9522;border:1px solid #a855f7;color:#d8b4fe}
+  .sc-fluentbit{background:#14532d22;border:1px solid #22c55e;color:#86efac}
+  .sc-auth   {background:#88133722;border:1px solid #f43f5e;color:#fda4af}
+  .sidecar-name{font-weight:700;font-size:11px}
+  .sidecar-desc{font-size:10px;color:var(--muted);margin-top:2px}
+  .sc-arrow{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:10px;gap:3px;margin-top:6px}
+  /* AGENT FRAMEWORK */
+  .agent-tier{background:#0f0d1a;border:1px solid #4c1d9544;border-radius:12px;padding:16px;margin-bottom:12px}
+  .agent-tier-title{font-size:12px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .lc-card{background:#1e1b2e;border:1px solid #7c3aed55;border-radius:10px;padding:12px}
+  .lg-card{background:#1a1229;border:1px solid #9333ea55;border-radius:10px;padding:12px}
+  .da-card{background:#1a0a2e;border:1px solid #c026d355;border-radius:10px;padding:12px}
+  /* STATE GRAPH */
+  .sg-node{border-radius:8px;padding:8px 10px;font-size:11px;font-weight:600;text-align:center;min-width:90px}
+  .sg-wrap{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:8px 0}
+  .sg-arrow{color:var(--dim);font-size:14px;flex-shrink:0}
+  .sg-branch{display:flex;flex-direction:column;gap:6px}
+  .sg-cond{font-size:10px;color:var(--dim);text-align:center;margin:2px 0}
+  /* MEMORY TIERS */
+  .mem-tier{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+  .mem-name{font-weight:700;font-size:11px;color:var(--accent2)}
+  .mem-desc{font-size:10px;color:var(--muted);margin-top:2px}
+  /* scrollbar */
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  code{font-family:monospace;font-size:10px;background:#0f172a;padding:1px 4px;border-radius:3px;color:#a5f3fc}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="hdr">
+  <div style="max-width:1600px;margin:0 auto">
+    <div class="hdr-title">MGP Platform — Solution Architecture</div>
+    <div class="hdr-sub">Manufacturing Governance Platform · Cloud-Agnostic · Microservices + Sidecar Pattern · LangChain / LangGraph / DeepAgents</div>
+    <div class="hdr-badges">
+      <span class="badge badge-blue">Kubernetes</span>
+      <span class="badge badge-green">7 Microservices</span>
+      <span class="badge badge-purple">LangChain + LangGraph</span>
+      <span class="badge badge-rose">DeepAgents</span>
+      <span class="badge badge-amber">Sidecar Pattern</span>
+      <span class="badge badge-cyan">React 18 + FastAPI</span>
+      <span class="badge badge-blue">SpiffWorkflow BPMN</span>
+      <span class="badge badge-green">PostgreSQL · Redis · MinIO</span>
+      <span class="badge badge-purple">OpenTelemetry · Prometheus</span>
+      <span class="badge badge-amber">GxP / 21 CFR Part 11</span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ══ LAYER 1 — CLIENT ══ -->
+<div class="section">
+  <div class="section-title">Layer 1 — Client / Presentation</div>
+  <div class="layer layer-client">
+    <div class="layer-label">Browser · React SPA · CDN-delivered static assets</div>
+    <div class="comp-grid g5">
+      <div class="comp"><div class="comp-icon">⚛️</div><div class="comp-name">React 18 SPA</div><div class="comp-tech">React + TypeScript + Vite 5</div><div class="comp-desc">Concurrent rendering, Suspense, route-level code-splitting. Zero runtime deps on agent frameworks.</div><div class="comp-tags"><span class="tag tag-blue">React 18</span><span class="tag tag-cyan">Vite 5</span><span class="tag tag-purple">TS 5</span></div></div>
+      <div class="comp"><div class="comp-icon">🗄️</div><div class="comp-name">State Management</div><div class="comp-tech">Zustand + TanStack Query v5</div><div class="comp-desc">Client state via Zustand persist (localStorage). Server state via React Query — cache, refetch, optimistic updates.</div><div class="comp-tags"><span class="tag tag-green">Zustand</span><span class="tag tag-amber">React Query</span></div></div>
+      <div class="comp"><div class="comp-icon">🎨</div><div class="comp-name">Design System</div><div class="comp-tech">Custom CSS + Lucide Icons</div><div class="comp-desc">CSS custom-property design tokens. Shared Button, Badge, Modal, SchemaForm components. No third-party UI lib.</div><div class="comp-tags"><span class="tag tag-purple">Design Tokens</span><span class="tag tag-cyan">Lucide</span></div></div>
+      <div class="comp"><div class="comp-icon">📊</div><div class="comp-name">Data Visualisation</div><div class="comp-tech">Recharts + @xyflow/react</div><div class="comp-desc">KPI charts (bar, pie, area) via Recharts. Visual workflow & pipeline editor via React Flow v12.</div><div class="comp-tags"><span class="tag tag-blue">Recharts</span><span class="tag tag-green">React Flow</span></div></div>
+      <div class="comp"><div class="comp-icon">🔐</div><div class="comp-name">Auth / Session</div><div class="comp-tech">JWT Bearer + Zustand Persist</div><div class="comp-desc">JWT in localStorage. Axios interceptor attaches Bearer header. Token refresh on 401. Role-filtered views.</div><div class="comp-tags"><span class="tag tag-rose">JWT</span><span class="tag tag-amber">RBAC</span></div></div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="layer-label" style="margin-bottom:8px">Application Pages</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="badge badge-blue">Dashboard / KPIs</span><span class="badge badge-blue">Tasks (Role-filtered)</span><span class="badge badge-blue">Certificates</span><span class="badge badge-blue">Material Requisition</span><span class="badge badge-blue">Workflow Designer</span><span class="badge badge-blue">Workflow Instances</span><span class="badge badge-purple">Agent Playground</span><span class="badge badge-purple">Agent Builder (Visual Pipeline)</span><span class="badge badge-purple">DB Query Agent</span><span class="badge badge-amber">Audit Log</span><span class="badge badge-amber">Reports (3-tab)</span><span class="badge badge-green">eSign Console</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LAYER 2 — INGRESS ══ -->
+<div class="section">
+  <div class="section-title">Layer 2 — Ingress, API Gateway & Security Perimeter</div>
+  <div class="layer layer-gateway">
+    <div class="layer-label">All inbound traffic · TLS termination · Rate limiting · Auth enforcement</div>
+    <div class="comp-grid g4">
+      <div class="comp"><div class="comp-icon">🌐</div><div class="comp-name">Kubernetes Ingress</div><div class="comp-tech">NGINX Ingress Controller</div><div class="comp-desc">Path-based routing <code>/api/&lt;svc&gt;/</code> → ClusterIP Services. Rate limiting annotations, CORS headers, TLS passthrough.</div><div class="comp-tags"><span class="tag tag-cyan">K8s Ingress</span><span class="tag tag-blue">NGINX</span><span class="tag tag-green">TLS</span></div></div>
+      <div class="comp"><div class="comp-icon">🔒</div><div class="comp-name">TLS Certificate Mgmt</div><div class="comp-tech">cert-manager + Let's Encrypt</div><div class="comp-desc">Automatic TLS provisioning and renewal (ACME). Stored as K8s Secrets. Wildcard certs via DNS-01 challenge.</div><div class="comp-tags"><span class="tag tag-rose">cert-manager</span><span class="tag tag-amber">ACME</span></div></div>
+      <div class="comp"><div class="comp-icon">🛡️</div><div class="comp-name">OAuth2 / OIDC Proxy</div><div class="comp-tech">oauth2-proxy + OpenID Connect</div><div class="comp-desc">Sidecar enforces OIDC session before traffic reaches services. Plugs into Keycloak, Okta, or any OIDC provider.</div><div class="comp-tags"><span class="tag tag-purple">OIDC</span><span class="tag tag-cyan">oauth2-proxy</span></div></div>
+      <div class="comp"><div class="comp-icon">⚡</div><div class="comp-name">CDN / Static Assets</div><div class="comp-tech">Cloudflare / Fastly / Self-hosted</div><div class="comp-desc">React build artefacts from CDN edge. Cache policy: <code>index.html → no-store</code>; hashed assets → 1-year immutable.</div><div class="comp-tags"><span class="tag tag-amber">CDN</span><span class="tag tag-green">Immutable Cache</span></div></div>
+    </div>
+    <div style="margin-top:14px">
+      <table class="conn-table" style="background:var(--bg);border-radius:8px;overflow:hidden">
+        <thead><tr><th>Path Prefix</th><th>Upstream Service</th><th>Port</th><th>Auth</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>/</code></td><td>CDN / React build</td><td>—</td><td>No</td><td>HTML shell; JS chunks fetched separately</td></tr>
+          <tr><td><code>/api/identity/</code></td><td>identity-svc</td><td>8003</td><td>No (login)</td><td>JWT issuance</td></tr>
+          <tr><td><code>/api/workflow/</code></td><td>workflow-engine</td><td>8004</td><td>JWT</td><td>Definition + instance CRUD</td></tr>
+          <tr><td><code>/api/tasks/</code></td><td>task-service</td><td>8005</td><td>JWT</td><td>Role-filtered task queue</td></tr>
+          <tr><td><code>/api/audit/</code></td><td>audit-core</td><td>8001</td><td>JWT</td><td>Append-only audit trail</td></tr>
+          <tr><td><code>/api/agents/</code></td><td>agent-service</td><td>8006</td><td>JWT+Admin</td><td>AI agent invocation + pipeline CRUD</td></tr>
+          <tr><td><code>/api/esign/</code></td><td>esign-svc</td><td>8002</td><td>JWT</td><td>Electronic signature</td></tr>
+          <tr><td><code>/api/llm/</code></td><td>llm-gateway</td><td>8007</td><td>Internal only</td><td>Not exposed to browser</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LAYER 3 — MICROSERVICES ══ -->
+<div class="section">
+  <div class="section-title">Layer 3 — Microservices (Python / FastAPI)</div>
+  <div class="layer layer-svc">
+    <div class="layer-label">7 independently deployable services · Async SQLAlchemy · Pydantic v2 · per-service PostgreSQL schema</div>
+    <div class="comp-grid g3" style="gap:12px">
+
+      <div class="svc-card"><div class="svc-accent" style="background:#6366f1"></div><div style="padding-left:10px">
+        <div class="svc-name">🔐 Identity Service</div><div class="svc-port">:8003 · identity-svc.mgp.svc.cluster.local</div>
+        <div class="svc-tech-row"><span class="tag tag-purple">FastAPI</span><span class="tag tag-blue">python-jose</span><span class="tag tag-amber">bcrypt</span><span class="tag tag-green">PostgreSQL</span></div>
+        <div class="svc-desc">User registry, password hashing (bcrypt cost=12), JWT issuance (HS256/RS256). RBAC role assignment. Pluggable LDAP/SAML adapter interface. Token blacklist via Redis.</div>
+        <div style="margin-top:8px"><span class="endpoint post">POST /v1/auth/login</span><span class="endpoint post">POST /v1/auth/refresh</span><span class="endpoint get">GET /v1/users</span><span class="endpoint post">POST /v1/users</span><span class="endpoint get">GET /v1/me</span></div>
+        <div style="margin-top:8px;font-size:10px;color:var(--dim)">users(id, email, hashed_pw, roles[], is_active)</div>
+      </div></div>
+
+      <div class="svc-card"><div class="svc-accent" style="background:#f97316"></div><div style="padding-left:10px">
+        <div class="svc-name">⚙️ Workflow Engine</div><div class="svc-port">:8004 · workflow-engine.mgp.svc.cluster.local</div>
+        <div class="svc-tech-row"><span class="tag tag-amber">FastAPI</span><span class="tag tag-cyan">SpiffWorkflow 1.2</span><span class="tag tag-purple">BPMN 2.0</span><span class="tag tag-green">PostgreSQL</span></div>
+        <div class="svc-desc">MGP-JSON → BPMN conversion at runtime. SpiffWorkflow drives state machine. Signals task-service and agent-service at each node. Supports: task, gateway, timer, agent_step, esign, logic, integration nodes.</div>
+        <div style="margin-top:8px"><span class="endpoint get">GET /v1/definitions</span><span class="endpoint post">POST /v1/definitions</span><span class="endpoint post">POST /v1/instances</span><span class="endpoint post">POST /v1/instances/{id}/signal</span></div>
+        <div style="margin-top:8px;font-size:10px;color:var(--dim)">workflow_definitions(id, graph_json, version, active) · workflow_instances(id, definition_id, status, context)</div>
+      </div></div>
+
+      <div class="svc-card"><div class="svc-accent" style="background:#f59e0b"></div><div style="padding-left:10px">
+        <div class="svc-name">✅ Task Service</div><div class="svc-port">:8005 · task-service.mgp.svc.cluster.local</div>
+        <div class="svc-tech-row"><span class="tag tag-amber">FastAPI</span><span class="tag tag-blue">SQLAlchemy async</span><span class="tag tag-green">PostgreSQL</span><span class="tag tag-cyan">Redis Pub/Sub</span></div>
+        <div class="svc-desc">Human-task inbox with role-filtered queues (operator / qa_manager / admin). Claim, complete, and form-data submission. JSON Schema validation on task forms. Signals workflow engine on completion. Publishes task updates to Redis Pub/Sub for real-time SSE.</div>
+        <div style="margin-top:8px"><span class="endpoint get">GET /v1/tasks?status=&role=</span><span class="endpoint post">POST /v1/tasks/{id}/claim</span><span class="endpoint post">POST /v1/tasks/{id}/complete</span></div>
+        <div style="margin-top:8px;font-size:10px;color:var(--dim)">tasks(id, workflow_instance_id, node_id, role, status, form_schema, form_data, claimed_by, due_at)</div>
+      </div></div>
+
+      <div class="svc-card"><div class="svc-accent" style="background:#22c55e"></div><div style="padding-left:10px">
+        <div class="svc-name">📋 Audit Core</div><div class="svc-port">:8001 · audit-core.mgp.svc.cluster.local</div>
+        <div class="svc-tech-row"><span class="tag tag-green">FastAPI</span><span class="tag tag-cyan">Append-only</span><span class="tag tag-amber">PostgreSQL</span><span class="tag tag-purple">21 CFR Part 11</span></div>
+        <div class="svc-desc">Immutable SHA-256 hash-chained event ledger for GxP compliance. All services write via shared AuditClient. Streams to Elasticsearch for full-text search. Tamper-evident by design.</div>
+        <div style="margin-top:8px"><span class="endpoint post">POST /v1/events</span><span class="endpoint get">GET /v1/events?entity=&actor=&from=</span></div>
+        <div style="margin-top:8px;font-size:10px;color:var(--dim)">audit_events(id, event_type, actor, entity_id, payload, prev_hash, hash, ts)</div>
+      </div></div>
+
+      <div class="svc-card"><div class="svc-accent" style="background:#14b8a6"></div><div style="padding-left:10px">
+        <div class="svc-name">✍️ eSign Service</div><div class="svc-port">:8002 · esign-svc.mgp.svc.cluster.local</div>
+        <div class="svc-tech-row"><span class="tag tag-teal">FastAPI</span><span class="tag tag-blue">PKCS#7</span><span class="tag tag-amber">21 CFR Part 11</span><span class="tag tag-green">PostgreSQL</span></div>
+        <div class="svc-desc">Electronic signature capture with meaning, reason, and re-authentication. Signatures stored with timestamp, signer identity, and document hash. Legally binding under 21 CFR Part 11.</div>
+        <div style="margin-top:8px"><span class="endpoint post">POST /v1/signatures</span><span class="endpoint get">GET /v1/signatures/{entity_id}</span><span class="endpoint post">POST /v1/signatures/verify</span></div>
+        <div style="margin-top:8px;font-size:10px;color:var(--dim)">signatures(id, signer_id, meaning, document_hash, signed_at, metadata)</div>
+      </div></div>
+
+      <div class="svc-card"><div class="svc-accent" style="background:#a855f7"></div><div style="padding-left:10px">
+        <div class="svc-name">🤖 Agent Service</div><div class="svc-port">:8006 · agent-service.mgp.svc.cluster.local</div>
+        <div class="svc-tech-row"><span class="tag tag-purple">FastAPI</span><span class="tag tag-cyan">LangChain</span><span class="tag tag-rose">LangGraph</span><span class="tag tag-orange">DeepAgents</span><span class="tag tag-green">PostgreSQL</span></div>
+        <div class="svc-desc">AI agent orchestration hub. Routes to built-in agents (LangChain chains), LangGraph stateful graphs, DeepAgent multi-agent teams, and custom visual pipelines. Traces every invocation. Supports workflow-triggered agent_step nodes.</div>
+        <div style="margin-top:8px"><span class="endpoint post">POST /v1/agents/invoke</span><span class="endpoint get">GET /v1/agents/types</span><span class="endpoint get">GET /v1/agents/traces</span><span class="endpoint post">POST /v1/pipelines</span><span class="endpoint get">GET /v1/pipelines</span></div>
+        <div style="margin-top:8px;font-size:10px;color:var(--dim)">agent_invocations(id, agent_type, input, output, tokens, trace_id) · agent_pipelines(id, name, graph_json)</div>
+      </div></div>
+
+      <div class="svc-card" style="grid-column:1/-1"><div class="svc-accent" style="background:#ec4899"></div><div style="padding-left:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+          <div>
+            <div class="svc-name">🧠 LLM Gateway</div><div class="svc-port">:8007 · llm-gateway.mgp.svc.cluster.local (internal only)</div>
+            <div class="svc-tech-row"><span class="tag tag-rose">FastAPI</span><span class="tag tag-purple">Adapter Pattern</span><span class="tag tag-cyan">httpx async</span></div>
+            <div class="svc-desc">Unified LLM interface consumed by LangChain, LangGraph, DeepAgents, and custom pipelines. Swappable adapters, model allow-listing, token tracking, retry with exponential backoff.</div>
+          </div>
+          <div>
+            <div class="layer-label" style="margin-bottom:8px">Supported Adapters</div>
+            <div style="font-size:11px;line-height:2">
+              🟢 <strong>openai</strong> <span style="color:var(--muted)">— GPT-4o, GPT-4.1-mini, o1</span><br>
+              🟣 <strong>anthropic</strong> <span style="color:var(--muted)">— Claude Sonnet 4.6, Haiku, Opus</span><br>
+              🔵 <strong>azure_openai</strong> <span style="color:var(--muted)">— Deployment-based routing</span><br>
+              🟠 <strong>ollama</strong> <span style="color:var(--muted)">— Llama 3, Mistral (self-hosted GPU)</span><br>
+              🔴 <strong>bedrock</strong> <span style="color:var(--muted)">— Claude / Titan via AWS Bedrock</span>
+            </div>
+          </div>
+          <div>
+            <div class="layer-label" style="margin-bottom:8px">Config (env-driven)</div>
+            <div style="font-family:monospace;font-size:10px;background:var(--bg);padding:10px;border-radius:6px;color:var(--muted);line-height:1.9">
+              LLM_ADAPTER=openai<br>LLM_DEFAULT_MODEL=gpt-4.1-mini<br>LLM_ALLOWED_MODELS=gpt-4.1-mini,gpt-4o<br>LLM_MAX_TOKENS=2048<br>LLM_TEMPERATURE=0.1<br>OPENAI_API_KEY=sk-...
+            </div>
+          </div>
+        </div>
+      </div></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- NEW: AGENTIC FRAMEWORK LAYER                                  -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Layer 3b — Agentic Framework: LangChain · LangGraph · DeepAgents</div>
+  <div class="layer layer-agent">
+    <div class="layer-label">All three frameworks co-exist inside agent-service — selected per agent_type at invocation time</div>
+
+    <!-- ── LANGCHAIN ── -->
+    <div class="agent-tier">
+      <div class="agent-tier-title" style="color:#7c3aed">
+        <span style="font-size:18px">🔗</span> LangChain — Composable Chains & Tool-Augmented Agents
+        <span class="tag tag-purple" style="margin-left:auto">langchain==0.3.x</span>
+        <span class="tag tag-purple">langchain-community</span>
+        <span class="tag tag-purple">langchain-openai</span>
+      </div>
+      <div class="comp-grid g4" style="gap:10px">
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">📜 Prompt Templates</div>
+          <div class="comp-desc" style="margin-top:6px">ChatPromptTemplate with SystemMessage + HumanMessage. Partial templates for reusable prompt fragments. FewShotChatMessagePromptTemplate for GxP domain examples. MessagesPlaceholder for injecting chat history.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-purple">ChatPromptTemplate</span><span class="tag tag-blue">FewShot</span></div>
+        </div>
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">⛓️ Chain Types</div>
+          <div class="comp-desc" style="margin-top:6px"><strong>LLMChain</strong>: prompt → LLM → output parser. <strong>SequentialChain</strong>: cert_review → risk_check → recommendation. <strong>RouterChain</strong>: routes deviation by severity to specialist chain. <strong>LCEL</strong>: pipe operator for composability.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-amber">LCEL</span><span class="tag tag-purple">Sequential</span><span class="tag tag-cyan">Router</span></div>
+        </div>
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">🛠️ Tools & Tool Calling</div>
+          <div class="comp-desc" style="margin-top:6px">Custom tools: <code>sql_query_tool</code> (read-only DB), <code>doc_retrieval_tool</code> (MinIO + Qdrant), <code>audit_lookup_tool</code>, <code>regulatory_search_tool</code>. Bound to LLM via <code>bind_tools()</code> for OpenAI function-calling.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-green">Tool Use</span><span class="tag tag-amber">Function Calling</span></div>
+        </div>
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">🧠 Memory & Retrieval</div>
+          <div class="comp-desc" style="margin-top:6px"><strong>ConversationBufferWindowMemory</strong>: last-N turns for DB agent. <strong>VectorStoreRetrieverMemory</strong>: semantic recall from past deviations (Qdrant). <strong>PostgresChatMessageHistory</strong>: persistent across sessions.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-teal">Qdrant</span><span class="tag tag-blue">Vector Memory</span></div>
+        </div>
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">📤 Output Parsers</div>
+          <div class="comp-desc" style="margin-top:6px"><strong>PydanticOutputParser</strong>: validates LLM JSON against CertReviewOutput, DeviationOut schemas. <strong>JsonOutputParser</strong>: for pipeline extract nodes. <strong>CommaSeparatedListOutputParser</strong>: for quick lists. Auto-retry on parse failure with FixedOutputParser.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-green">Pydantic</span><span class="tag tag-amber">Auto-retry</span></div>
+        </div>
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">🔍 RAG Pipeline</div>
+          <div class="comp-desc" style="margin-top:6px"><strong>DocumentLoader</strong>: loads PDFs from MinIO (PyPDFLoader via presigned URL). <strong>RecursiveCharacterTextSplitter</strong>: 512-token chunks, 64 overlap. <strong>QdrantVectorStore</strong>: embedding + retrieval. <strong>RetrievalQA</strong>: stuff + refine strategies.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-purple">RAG</span><span class="tag tag-teal">Qdrant</span><span class="tag tag-blue">Embeddings</span></div>
+        </div>
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">🤖 ReAct Agent</div>
+          <div class="comp-desc" style="margin-top:6px">create_react_agent() with tool set. Reason → Act → Observe loop. Used by DB Query Agent: NL → SQL plan → execute → explain → iterate if error. Max iterations: 6. Fallback to error explanation on loop limit.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-rose">ReAct</span><span class="tag tag-cyan">NL→SQL</span></div>
+        </div>
+        <div class="lc-card">
+          <div class="comp-name" style="color:#c4b5fd">📡 Callbacks & Tracing</div>
+          <div class="comp-desc" style="margin-top:6px">LangSmith tracing (optional). Custom <code>AuditCallbackHandler</code> writes every LLM call to audit-core. <code>TokenUsageCallback</code> aggregates tokens per workflow instance. Prometheus metrics via callback.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-amber">LangSmith</span><span class="tag tag-green">Audit Hook</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LANGGRAPH ── -->
+    <div class="agent-tier">
+      <div class="agent-tier-title" style="color:#9333ea">
+        <span style="font-size:18px">🕸️</span> LangGraph — Stateful Agent Graphs & Human-in-the-Loop
+        <span class="tag tag-purple" style="margin-left:auto">langgraph==0.2.x</span>
+        <span class="tag tag-purple">langgraph-checkpoint-postgres</span>
+      </div>
+
+      <!-- State Graph visual -->
+      <div style="background:#0f0d1a;border:1px solid #7c3aed33;border-radius:10px;padding:16px;margin-bottom:12px">
+        <div class="layer-label" style="margin-bottom:12px;color:#a855f7">Cert Review LangGraph — StateGraph</div>
+        <div class="sg-wrap">
+          <div class="sg-node" style="background:#14532d;border:1px solid #22c55e;color:#86efac">__START__</div>
+          <div class="sg-arrow">→</div>
+          <div class="sg-node" style="background:#1e1b2e;border:1px solid #7c3aed;color:#c4b5fd">intake<br><span style="font-size:9px;font-weight:400">validate inputs</span></div>
+          <div class="sg-arrow">→</div>
+          <div class="sg-node" style="background:#1e1b2e;border:1px solid #7c3aed;color:#c4b5fd">retrieve_docs<br><span style="font-size:9px;font-weight:400">RAG from MinIO</span></div>
+          <div class="sg-arrow">→</div>
+          <div class="sg-node" style="background:#1e1b2e;border:1px solid #7c3aed;color:#c4b5fd">llm_review<br><span style="font-size:9px;font-weight:400">GPT-4o analysis</span></div>
+          <div class="sg-arrow">→</div>
+          <div class="sg-branch">
+            <div class="sg-cond">conditional_edge</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div class="sg-node" style="background:#78350f;border:1px solid #f59e0b;color:#fde68a;font-size:10px">risk &gt; 7<br>escalate_node</div>
+              <div class="sg-node" style="background:#134e4a;border:1px solid #14b8a6;color:#99f6e4;font-size:10px">risk ≤ 7<br>approve_node</div>
+            </div>
+          </div>
+          <div class="sg-arrow">→</div>
+          <div class="sg-node" style="background:#1e1b2e;border:1px solid #7c3aed;color:#c4b5fd">human_review<br><span style="font-size:9px;font-weight:400">interrupt_before</span></div>
+          <div class="sg-arrow">→</div>
+          <div class="sg-node" style="background:#1e1b2e;border:1px solid #7c3aed;color:#c4b5fd">self_critique<br><span style="font-size:9px;font-weight:400">Reflexion loop</span></div>
+          <div class="sg-arrow">↺</div>
+          <div class="sg-node" style="background:#881337;border:1px solid #f43f5e;color:#fda4af">__END__</div>
+        </div>
+        <div style="font-size:10px;color:var(--dim);margin-top:8px">State: <code>TypedDict</code> with cert_data, retrieved_docs, llm_output, risk_score, critique_count (max 3), final_recommendation. Checkpointed to PostgreSQL after every node.</div>
+      </div>
+
+      <div class="comp-grid g4" style="gap:10px">
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">📐 StateGraph Architecture</div>
+          <div class="comp-desc" style="margin-top:6px">Typed state schema (TypedDict / Pydantic). Nodes are pure async functions receiving state → returning partial update. Edges: static, conditional (router function), or parallel fan-out. Compiled graph is reusable across invocations.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-purple">TypedDict State</span><span class="tag tag-blue">Pure Functions</span></div>
+        </div>
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">💾 Checkpointing</div>
+          <div class="comp-desc" style="margin-top:6px"><code>PostgresSaver</code> persists full graph state after each node. Enables: resume after crash, pause-for-human-input, time-travel debugging, audit replay. thread_id maps to workflow_instance_id for traceability.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-green">PostgresSaver</span><span class="tag tag-amber">Time-travel</span></div>
+        </div>
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">👤 Human-in-the-Loop</div>
+          <div class="comp-desc" style="margin-top:6px"><code>interrupt_before</code> / <code>interrupt_after</code> on designated nodes. Graph suspends, serialises state to PostgreSQL. Task-service creates human task. On task completion, graph resumes from exact checkpoint. Zero state loss.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-rose">Interrupt</span><span class="tag tag-teal">Resume</span></div>
+        </div>
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">🔄 Reflexion / Self-Critique</div>
+          <div class="comp-desc" style="margin-top:6px">Critique node re-evaluates LLM output: checks for missing regulatory citations, vague recommendations, incomplete checklists. If critique_score &lt; threshold AND count &lt; 3 → loop back to llm_review with critique appended. Prevents hallucinated compliance output.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-purple">Reflexion</span><span class="tag tag-amber">Max loops: 3</span></div>
+        </div>
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">🌿 Parallel Subgraphs</div>
+          <div class="comp-desc" style="margin-top:6px">Fan-out via <code>Send()</code> API: batch_anomaly graph processes each batch record in parallel subgraph. Results merged by aggregation node. Controlled concurrency via semaphore (max 5 parallel LLM calls per workflow instance).</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-cyan">Fan-out</span><span class="tag tag-green">Send()</span></div>
+        </div>
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">🗺️ Multi-Agent Supervisor</div>
+          <div class="comp-desc" style="margin-top:6px">Supervisor node decides which specialist agent to call next. Agents: deviation_triage → rca_drafting → capa_suggestion form a chain, but supervisor can re-invoke any based on confidence score. Terminates when supervisor returns FINISH.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-rose">Supervisor</span><span class="tag tag-purple">Multi-Agent</span></div>
+        </div>
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">📊 Graph Tracing</div>
+          <div class="comp-desc" style="margin-top:6px">Every node execution emits OTEL span (parent = workflow trace). State diff logged at each step. Token counts aggregated. Final trace stored in <code>agent_invocations</code> with full state history. Visualisable in Agent Playground UI.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-purple">OTEL Spans</span><span class="tag tag-amber">State Diff</span></div>
+        </div>
+        <div class="lg-card">
+          <div class="comp-name" style="color:#d8b4fe">🧪 Defined Graphs in MGP</div>
+          <div class="comp-desc" style="margin-top:6px"><strong>cert_review_graph</strong>: 7 nodes, PostgresSaver, human interrupt. <strong>deviation_capa_graph</strong>: supervisor + 3 specialist agents. <strong>batch_anomaly_graph</strong>: parallel fan-out per batch. <strong>db_query_graph</strong>: ReAct loop with SQL tools.</div>
+          <div class="comp-tags" style="margin-top:8px"><span class="tag tag-teal">4 Graphs</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DEEPAGENTS ── -->
+    <div class="agent-tier">
+      <div class="agent-tier-title" style="color:#c026d3">
+        <span style="font-size:18px">🧬</span> DeepAgents — Autonomous Multi-Agent Teams with Long-Horizon Planning
+        <span class="tag tag-rose" style="margin-left:auto">deep-agents==1.x</span>
+        <span class="tag tag-rose">Role Specialisation</span>
+        <span class="tag tag-rose">Episodic Memory</span>
+      </div>
+
+      <!-- Architecture overview -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:14px;margin-bottom:12px">
+        <div style="background:#0f0d1a;border:1px solid #c026d333;border-radius:10px;padding:14px">
+          <div class="layer-label" style="color:#e879f9;margin-bottom:10px">Agent Team Topology — Deviation CAPA</div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+            <div style="background:#4a044e;border:1px solid #c026d3;border-radius:8px;padding:8px 20px;font-size:11px;font-weight:700;color:#f0abfc">🎯 Orchestrator Agent<br><span style="font-size:10px;font-weight:400;color:#d8b4fe">Plans tasks · Delegates · Synthesises</span></div>
+            <div style="color:var(--dim);font-size:18px">↓ delegates to ↓</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%">
+              <div style="background:#1a0a2e;border:1px solid #9333ea55;border-radius:6px;padding:8px;text-align:center;font-size:10px;font-weight:600;color:#d8b4fe">🔬 Triage<br>Specialist</div>
+              <div style="background:#1a0a2e;border:1px solid #9333ea55;border-radius:6px;padding:8px;text-align:center;font-size:10px;font-weight:600;color:#d8b4fe">📝 RCA<br>Analyst</div>
+              <div style="background:#1a0a2e;border:1px solid #9333ea55;border-radius:6px;padding:8px;text-align:center;font-size:10px;font-weight:600;color:#d8b4fe">🛠️ CAPA<br>Planner</div>
+            </div>
+            <div style="color:var(--dim);font-size:18px">↓ results to ↓</div>
+            <div style="background:#1e1229;border:1px solid #f43f5e55;border-radius:8px;padding:8px 20px;font-size:11px;font-weight:700;color:#fda4af;text-align:center">🧐 Critic Agent<br><span style="font-size:10px;font-weight:400">Validates · Scores · Requests revision</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="comp-grid g2" style="gap:8px">
+            <div class="da-card">
+              <div class="comp-name" style="color:#f0abfc">🎯 Orchestrator Agent</div>
+              <div class="comp-desc" style="margin-top:6px">Receives task from workflow engine. Decomposes into subtasks using chain-of-thought planning. Assigns subtasks to specialist agents with context. Monitors completion. Handles failures by reassigning or escalating. Final synthesis and confidence scoring.</div>
+              <div class="comp-tags" style="margin-top:6px"><span class="tag tag-rose">Task Decomposition</span><span class="tag tag-purple">CoT Planning</span></div>
+            </div>
+            <div class="da-card">
+              <div class="comp-name" style="color:#f0abfc">🧐 Critic Agent</div>
+              <div class="comp-desc" style="margin-top:6px">Independent validator with a separate system prompt. Evaluates output against regulatory criteria (ICH Q10, 21 CFR 211). Returns critique_score (0–1) and specific_feedback. Orchestrator re-delegates if score &lt; 0.85. Max 2 revision cycles.</div>
+              <div class="comp-tags" style="margin-top:6px"><span class="tag tag-amber">Critique Score</span><span class="tag tag-teal">ICH Q10</span></div>
+            </div>
+            <div class="da-card">
+              <div class="comp-name" style="color:#f0abfc">💾 Episodic Memory</div>
+              <div class="comp-desc" style="margin-top:6px">Each agent maintains episodic memory (past task completions, outcomes, corrections received). Stored in Qdrant vector store. Retrieved at agent init via semantic similarity to current task. Enables agents to learn from past deviations and improve recommendations over time.</div>
+              <div class="comp-tags" style="margin-top:6px"><span class="tag tag-teal">Qdrant</span><span class="tag tag-blue">Semantic Recall</span></div>
+            </div>
+            <div class="da-card">
+              <div class="comp-name" style="color:#f0abfc">🔧 Tool Registry</div>
+              <div class="comp-desc" style="margin-top:6px">Each specialist agent is provisioned a curated tool set: Triage gets <code>regulatory_lookup</code>; RCA gets <code>batch_history_query</code> + <code>process_param_lookup</code>; CAPA gets <code>sop_search</code> + <code>training_record_query</code>. Prevents scope creep between roles.</div>
+              <div class="comp-tags" style="margin-top:6px"><span class="tag tag-green">Scoped Tools</span><span class="tag tag-purple">Role Isolation</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory tiers -->
+      <div style="background:#0f0d1a;border:1px solid #c026d333;border-radius:10px;padding:14px">
+        <div class="layer-label" style="color:#e879f9;margin-bottom:10px">Agent Memory Architecture — Three Tiers</div>
+        <div class="comp-grid g3" style="gap:8px">
+          <div class="mem-tier">
+            <div class="mem-name">🟡 Working Memory (In-context)</div>
+            <div class="mem-desc">Current task state, intermediate results, tool call history. Lives in LLM context window. Managed via LangGraph state dict. Cleared on task completion.</div>
+          </div>
+          <div class="mem-tier">
+            <div class="mem-name">🔵 Episodic Memory (Vector Store)</div>
+            <div class="mem-desc">Past task summaries embedded and stored in Qdrant. Retrieved by cosine similarity at task start. Gives agents domain experience without retraining. TTL: 180 days.</div>
+          </div>
+          <div class="mem-tier">
+            <div class="mem-name">🟢 Semantic Memory (Knowledge Base)</div>
+            <div class="mem-desc">Static regulatory documents (ICH Q10, 21 CFR 211, internal SOPs) chunked and indexed in Qdrant. Read-only. Updated via RAG ingestion pipeline on SOP change.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Framework selection matrix -->
+    <div style="margin-top:12px">
+      <div class="layer-label" style="margin-bottom:10px">Framework Selection Matrix — Which to Use When</div>
+      <table class="conn-table" style="background:var(--bg);border-radius:8px;overflow:hidden">
+        <thead><tr><th>Use Case in MGP</th><th>Framework</th><th>Why</th><th>Invocation Pattern</th></tr></thead>
+        <tbody>
+          <tr><td>cert_review (workflow node)</td><td><span class="tag tag-rose" style="font-size:11px">LangGraph</span></td><td>Needs human interrupt + self-critique loop + PostgreSQL checkpoint</td><td><code>agent_step</code> node → graph.invoke() → suspend/resume</td></tr>
+          <tr><td>DB Query Agent (interactive)</td><td><span class="tag tag-purple" style="font-size:11px">LangChain ReAct</span></td><td>Stateless per-query, tool loop with SQL execution</td><td>Direct HTTP <code>POST /v1/agents/invoke</code></td></tr>
+          <tr><td>deviation_capa (multi-step)</td><td><span class="tag tag-rose" style="font-size:11px">DeepAgents</span></td><td>Requires 3 specialists + independent critic + episodic memory</td><td><code>agent_step</code> node → orchestrator.run()</td></tr>
+          <tr><td>Document summariser (pipeline)</td><td><span class="tag tag-purple" style="font-size:11px">LangChain Chain</span></td><td>Simple sequential: load → split → summarise → format. No loops.</td><td>Custom pipeline via Agent Builder UI</td></tr>
+          <tr><td>batch_anomaly (parallel)</td><td><span class="tag tag-rose" style="font-size:11px">LangGraph</span></td><td>Fan-out Send() for parallel batch processing</td><td><code>agent_step</code> node → graph with Send()</td></tr>
+          <tr><td>Risk Scorer (custom pipeline)</td><td><span class="tag tag-amber" style="font-size:11px">Custom Pipeline</span></td><td>Visual pipeline defined in Agent Builder; no LLM loop needed</td><td>Agent Builder → <code>pipeline:{uuid}</code> agent_type</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LAYER 4 — DATA ══ -->
+<div class="section">
+  <div class="section-title">Layer 4 — Data Stores & Persistence</div>
+  <div class="layer layer-data">
+    <div class="layer-label">Per-service isolation · Polyglot persistence · S3-compatible blob · Vector store for RAG</div>
+    <div class="comp-grid g5" style="gap:12px">
+      <div class="ds-card">
+        <div style="font-size:24px;margin-bottom:8px">🐘</div>
+        <div style="font-weight:700;font-size:12px">PostgreSQL 15</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:2px">SQLAlchemy async · Alembic · Patroni HA</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Per-service schema isolation. PgBouncer connection pooling. Point-in-time recovery. Read replicas for audit/reporting. LangGraph PostgresSaver uses dedicated schema.</div>
+        <div class="ds-schema">audit · identity · workflow<br>tasks · esign · agents<br>langgraph_checkpoints ← LangGraph state</div>
+      </div>
+      <div class="ds-card">
+        <div style="font-size:24px;margin-bottom:8px">📦</div>
+        <div style="font-weight:700;font-size:12px">MinIO (S3-compatible)</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:2px">boto3 SDK · Erasure coding · SSE-S3</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Document attachments for certs and MRs. Signed URLs for secure download. Bucket versioning. Lifecycle archival policies. Source for RAG document ingestion pipeline.</div>
+        <div class="ds-schema">mgp-documents/certs/{id}/<br>mgp-documents/mr/{id}/<br>mgp-rag-source/ ← for Qdrant ingestion</div>
+      </div>
+      <div class="ds-card">
+        <div style="font-size:24px;margin-bottom:8px">⚡</div>
+        <div style="font-weight:700;font-size:12px">Redis 7</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:2px">Sentinel HA · AOF persistence</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">JWT revocation blacklist. Rate-limit counters per user/IP. Task-state Pub/Sub for SSE. Agent job queue. LangChain ConversationBufferMemory backend option.</div>
+        <div class="ds-schema">jwt:revoked:{jti} → TTL=exp<br>ratelimit:{ip}:{endpoint}<br>pubsub:task_updates<br>agent:jobqueue</div>
+      </div>
+      <div class="ds-card">
+        <div style="font-size:24px;margin-bottom:8px">🔮</div>
+        <div style="font-weight:700;font-size:12px">Qdrant</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:2px">Vector DB · HNSW index · gRPC API</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Semantic search over regulatory docs, SOPs, past deviations. Used by LangChain RAG retriever and DeepAgents episodic memory. 1536-dim OpenAI embeddings. Payload filtering for tenant isolation.</div>
+        <div class="ds-schema">collections:<br>  regulatory_docs (SOP, ICH, CFR)<br>  deviation_history (episodic memory)<br>  cert_knowledge_base</div>
+      </div>
+      <div class="ds-card">
+        <div style="font-size:24px;margin-bottom:8px">🔍</div>
+        <div style="font-weight:700;font-size:12px">Elasticsearch 8</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:2px">Kibana · Logstash · Filebeat</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Full-text search over audit events and workflow history. Audit-core streams via Logstash. Compliance dashboards in Kibana. BM25 hybrid search combined with Qdrant dense retrieval.</div>
+        <div class="ds-schema">mgp-audit-events-{YYYY.MM}<br>mgp-workflow-history<br>mgp-llm-traces<br>mgp-agent-invocations</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- NEW: SIDECAR PATTERN LAYER                                    -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Layer 5 — Sidecar Pattern: Cross-Cutting Capabilities</div>
+  <div class="layer layer-sidecar">
+    <div class="layer-label">Every microservice Pod carries these sidecars — capabilities injected without changing application code</div>
+
+    <!-- Sidecar overview cards -->
+    <div class="comp-grid g5" style="gap:10px;margin-bottom:20px">
+      <div class="comp" style="border-left:3px solid #0ea5e9">
+        <div style="font-size:18px">🕸️</div>
+        <div class="comp-name">Envoy Proxy</div>
+        <div class="comp-tech">Istio sidecar — auto-injected</div>
+        <div class="comp-desc">mTLS between all services. Traffic shaping, circuit breaker, retry, timeout. L7 observability. Zero application code change.</div>
+        <div class="comp-tags"><span class="tag tag-cyan">mTLS</span><span class="tag tag-blue">Circuit Breaker</span></div>
+      </div>
+      <div class="comp" style="border-left:3px solid #f59e0b">
+        <div style="font-size:18px">🔑</div>
+        <div class="comp-name">Vault Agent</div>
+        <div class="comp-tech">HashiCorp Vault sidecar injector</div>
+        <div class="comp-desc">Fetches secrets from Vault KV, writes to shared tmpfs volume. Renews leases. App reads files — never touches Vault API directly.</div>
+        <div class="comp-tags"><span class="tag tag-amber">Secret Rotation</span><span class="tag tag-rose">Dynamic Creds</span></div>
+      </div>
+      <div class="comp" style="border-left:3px solid #a855f7">
+        <div style="font-size:18px">📡</div>
+        <div class="comp-name">OTEL Collector Agent</div>
+        <div class="comp-tech">opentelemetry-collector-contrib</div>
+        <div class="comp-desc">Receives traces/metrics from app via OTLP (localhost). Batches, samples, and exports to Jaeger + Prometheus. Adds K8s resource attributes.</div>
+        <div class="comp-tags"><span class="tag tag-purple">OTLP</span><span class="tag tag-blue">Sampling</span></div>
+      </div>
+      <div class="comp" style="border-left:3px solid #22c55e">
+        <div style="font-size:18px">📜</div>
+        <div class="comp-name">Fluent Bit</div>
+        <div class="comp-tech">Log forwarder — DaemonSet</div>
+        <div class="comp-desc">Tails stdout/stderr from all pods on the node. Parses JSON logs. Adds pod/namespace labels. Ships to Loki. Zero app-side log config needed.</div>
+        <div class="comp-tags"><span class="tag tag-green">JSON Parse</span><span class="tag tag-teal">Loki</span></div>
+      </div>
+      <div class="comp" style="border-left:3px solid #f43f5e">
+        <div style="font-size:18px">🔒</div>
+        <div class="comp-name">oauth2-proxy</div>
+        <div class="comp-tech">Auth sidecar (user-facing only)</div>
+        <div class="comp-desc">Validates OIDC session / JWT before traffic reaches app container. Injects X-Auth-User and X-Auth-Roles headers. App trusts headers — no JWT parsing in app.</div>
+        <div class="comp-tags"><span class="tag tag-rose">OIDC</span><span class="tag tag-amber">Header Injection</span></div>
+      </div>
+    </div>
+
+    <!-- Pod diagrams — one per service type -->
+    <div class="layer-label" style="margin-bottom:12px">Per-Service Pod Layout (actual K8s Pod spec)</div>
+    <div class="pod-wrap">
+
+      <!-- Workflow Engine pod -->
+      <div class="pod">
+        <div class="pod-label">workflow-engine Pod</div>
+        <div class="pod-inner">
+          <div class="pod-main">
+            <div class="pod-main-name">⚙️ workflow-engine</div>
+            <div class="pod-main-sub">FastAPI + SpiffWorkflow · :8004 · uvicorn<br>Reads secrets from /vault/secrets/db-creds<br>Emits OTLP traces to localhost:4317</div>
+          </div>
+          <div class="sidecar sc-envoy">
+            <div class="sidecar-name">🕸️ envoy-proxy</div>
+            <div class="sidecar-desc">mTLS · retry · circuit-break<br>:15001 iptables intercept</div>
+          </div>
+          <div class="sidecar sc-vault">
+            <div class="sidecar-name">🔑 vault-agent</div>
+            <div class="sidecar-desc">Writes DB creds to<br>/vault/secrets/ tmpfs</div>
+          </div>
+          <div class="sidecar sc-otel">
+            <div class="sidecar-name">📡 otel-collector</div>
+            <div class="sidecar-desc">OTLP :4317 → Jaeger<br>+ Prometheus /metrics</div>
+          </div>
+          <div class="sidecar sc-fluentbit">
+            <div class="sidecar-name">📜 fluent-bit</div>
+            <div class="sidecar-desc">Tails /proc/1/fd/1<br>→ Loki with pod labels</div>
+          </div>
+        </div>
+        <div class="sc-arrow">📂 shared tmpfs: /vault/secrets &nbsp;·&nbsp; 🔌 iptables hijacks all TCP via Envoy</div>
+      </div>
+
+      <!-- Agent Service pod -->
+      <div class="pod">
+        <div class="pod-label">agent-service Pod</div>
+        <div class="pod-inner">
+          <div class="pod-main">
+            <div class="pod-main-name">🤖 agent-service</div>
+            <div class="pod-main-sub">FastAPI + LangChain + LangGraph + DeepAgents<br>:8006 · Reads LLM API key from /vault/secrets/<br>OTEL: traces LangGraph node execution</div>
+          </div>
+          <div class="sidecar sc-envoy">
+            <div class="sidecar-name">🕸️ envoy-proxy</div>
+            <div class="sidecar-desc">mTLS to llm-gateway<br>timeout: 120s for LLM calls</div>
+          </div>
+          <div class="sidecar sc-vault">
+            <div class="sidecar-name">🔑 vault-agent</div>
+            <div class="sidecar-desc">Rotates OPENAI_API_KEY<br>Qdrant API key · DB creds</div>
+          </div>
+          <div class="sidecar sc-otel">
+            <div class="sidecar-name">📡 otel-collector</div>
+            <div class="sidecar-desc">LangGraph node spans<br>Token usage metrics</div>
+          </div>
+          <div class="sidecar sc-fluentbit">
+            <div class="sidecar-name">📜 fluent-bit</div>
+            <div class="sidecar-desc">Agent trace logs →<br>mgp-agent-invocations index</div>
+          </div>
+        </div>
+        <div class="sc-arrow">⚠️ Envoy timeout extended to 120s to accommodate LLM round-trips</div>
+      </div>
+
+      <!-- Audit Core pod -->
+      <div class="pod">
+        <div class="pod-label">audit-core Pod</div>
+        <div class="pod-inner">
+          <div class="pod-main">
+            <div class="pod-main-name">📋 audit-core</div>
+            <div class="pod-main-sub">FastAPI · Append-only SQLAlchemy · :8001<br>Write-once PVC for immutable storage<br>Streams to Elasticsearch via Logstash</div>
+          </div>
+          <div class="sidecar sc-envoy">
+            <div class="sidecar-name">🕸️ envoy-proxy</div>
+            <div class="sidecar-desc">mTLS · rate-limit<br>500 writes/s max</div>
+          </div>
+          <div class="sidecar sc-vault">
+            <div class="sidecar-name">🔑 vault-agent</div>
+            <div class="sidecar-desc">Dynamic PG creds<br>Append-only PG role</div>
+          </div>
+          <div class="sidecar sc-otel">
+            <div class="sidecar-name">📡 otel-collector</div>
+            <div class="sidecar-desc">Hash-chain write latency<br>event ingestion rate</div>
+          </div>
+          <div class="sidecar sc-fluentbit">
+            <div class="sidecar-name">📜 fluent-bit</div>
+            <div class="sidecar-desc">Ship to Loki AND<br>Elasticsearch dual output</div>
+          </div>
+        </div>
+        <div class="sc-arrow">🔐 Vault issues append-only Postgres role — audit data cannot be deleted via app</div>
+      </div>
+
+      <!-- Identity Service pod (with oauth2-proxy) -->
+      <div class="pod">
+        <div class="pod-label">identity-svc Pod + Auth Sidecar</div>
+        <div class="pod-inner">
+          <div class="pod-main">
+            <div class="pod-main-name">🔐 identity-svc</div>
+            <div class="pod-main-sub">FastAPI + python-jose · :8003<br>Issues JWT tokens · bcrypt hash<br>Trusts X-Auth-* headers from oauth2-proxy</div>
+          </div>
+          <div class="sidecar sc-auth">
+            <div class="sidecar-name">🔒 oauth2-proxy</div>
+            <div class="sidecar-desc">OIDC session gate<br>Injects X-Auth-User header</div>
+          </div>
+          <div class="sidecar sc-envoy">
+            <div class="sidecar-name">🕸️ envoy-proxy</div>
+            <div class="sidecar-desc">mTLS · brute-force<br>rate limit: 10/min/IP</div>
+          </div>
+          <div class="sidecar sc-vault">
+            <div class="sidecar-name">🔑 vault-agent</div>
+            <div class="sidecar-desc">JWT signing key<br>rotation every 24h</div>
+          </div>
+          <div class="sidecar sc-fluentbit">
+            <div class="sidecar-name">📜 fluent-bit</div>
+            <div class="sidecar-desc">Auth events → SIEM<br>failed logins flagged</div>
+          </div>
+        </div>
+        <div class="sc-arrow">🛡️ oauth2-proxy sits in front — only valid sessions reach identity-svc login endpoint</div>
+      </div>
+
+    </div>
+
+    <!-- Sidecar communication diagram -->
+    <div style="margin-top:16px;background:#0f172a;border:1px solid var(--border);border-radius:10px;padding:16px">
+      <div class="layer-label" style="margin-bottom:10px">Sidecar Data Flow — What Each Sidecar Carries</div>
+      <table class="conn-table" style="border-radius:6px;overflow:hidden">
+        <thead><tr><th>Sidecar</th><th>Injection Method</th><th>Data Plane</th><th>Destination</th><th>Cross-cutting Capability Delivered</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Envoy (Istio)</strong></td><td>Mutating Webhook — auto-injected on namespace label</td><td>iptables → sidecar → upstream</td><td>Target service ClusterIP</td><td>mTLS, circuit breaker, retries, timeouts, traffic shaping, L7 metrics</td></tr>
+          <tr><td><strong>Vault Agent</strong></td><td>Annotation: <code>vault.hashicorp.com/agent-inject: "true"</code></td><td>tmpfs volume <code>/vault/secrets/</code></td><td>HashiCorp Vault</td><td>Secret injection, lease renewal, dynamic DB credentials, zero secret in env vars</td></tr>
+          <tr><td><strong>OTEL Collector</strong></td><td>Sidecar container in PodSpec (Helm chart base template)</td><td>OTLP gRPC localhost:4317</td><td>Jaeger + Prometheus</td><td>Distributed tracing, custom span attributes, metric export, sampling decisions</td></tr>
+          <tr><td><strong>Fluent Bit</strong></td><td>DaemonSet (one per node) — no Pod-level injection</td><td>Tail /var/log/containers/*.log</td><td>Loki + Elasticsearch</td><td>Structured log shipping, JSON parsing, pod metadata enrichment, dual output</td></tr>
+          <tr><td><strong>oauth2-proxy</strong></td><td>Sidecar container in user-facing service PodSpecs only</td><td>HTTP :4180 → upstream app</td><td>OIDC Provider (Keycloak)</td><td>Session validation, OIDC token exchange, header injection, zero JWT code in app</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LAYER 6 — INFRASTRUCTURE ══ -->
+<div class="section">
+  <div class="section-title">Layer 6 — Container Orchestration & Infrastructure</div>
+  <div class="layer layer-infra">
+    <div class="layer-label">Kubernetes · Helm · Service Mesh · GitOps · Secrets Management</div>
+    <div class="comp-grid g4" style="gap:12px">
+      <div class="infra-card"><div class="infra-title">☸️ Kubernetes Cluster</div><ul class="infra-list"><li>Namespace isolation: mgp-prod / mgp-staging / mgp-dev</li><li>ResourceQuotas + LimitRanges per namespace</li><li>HorizontalPodAutoscaler (CPU + custom metrics)</li><li>PodDisruptionBudgets for zero-downtime deploys</li><li>NetworkPolicies — service-to-service allow-list</li><li>RBAC: ServiceAccounts per workload (least-privilege)</li><li>Node affinity: agent-service GPU pool optional</li></ul></div>
+      <div class="infra-card"><div class="infra-title">⛵ Helm Charts</div><ul class="infra-list"><li>One Helm chart per microservice (shared base chart)</li><li>Values override per environment (dev/staging/prod)</li><li>Secrets injected from Vault via annotations</li><li>Umbrella chart mgp-platform for full-stack deploy</li><li>Helm test hooks for smoke tests post-deploy</li><li>chart: mgp-identity, mgp-workflow, mgp-agents…</li></ul></div>
+      <div class="infra-card"><div class="infra-title">🕸️ Service Mesh (Istio)</div><ul class="infra-list"><li>mTLS between all sidecar-injected services</li><li>Traffic shifting for canary / blue-green deploys</li><li>Fault injection for chaos testing (Chaos Mesh)</li><li>Distributed tracing integration (Jaeger)</li><li>Circuit breaker via Istio DestinationRules</li><li>Kiali dashboard for service-mesh topology</li></ul></div>
+      <div class="infra-card"><div class="infra-title">🔑 HashiCorp Vault</div><ul class="infra-list"><li>KV v2: all API keys, connection strings</li><li>Vault Agent sidecar injects secrets as files</li><li>Dynamic DB credentials (30-min lease, auto-renew)</li><li>PKI engine for internal mTLS certificates</li><li>Transit engine for envelope encryption</li><li>Audit log: every Vault read/write recorded</li></ul></div>
+      <div class="infra-card"><div class="infra-title">📦 Container Registry (Harbor)</div><ul class="infra-list"><li>OCI-compliant, self-hosted or GHCR</li><li>Image scanning: Trivy on every push</li><li>Signed images: cosign + Sigstore (keyless)</li><li>Tag policy: git-sha + semver, no :latest in prod</li><li>Retention: 90-day / 10-image per repo</li><li>Admission webhook blocks unsigned images</li></ul></div>
+      <div class="infra-card"><div class="infra-title">🚀 GitOps (ArgoCD)</div><ul class="infra-list"><li>App-of-Apps pattern — one root app per environment</li><li>Git is single source of truth for K8s state</li><li>Auto-sync staging on merge to main</li><li>Manual approval gate for prod promotion</li><li>Rollback = revert Helm values commit in gitops-repo</li><li>Drift detection alerts via Slack webhook</li></ul></div>
+      <div class="infra-card"><div class="infra-title">💾 Storage Classes</div><ul class="infra-list"><li>PostgreSQL: ssd-retain (PVC, ReadWriteOnce)</li><li>Redis: ssd-retain with AOF persistence</li><li>MinIO: hdd-bulk (distributed, erasure coding 4+2)</li><li>Elasticsearch: ssd-retain × 3 replicas</li><li>Qdrant: ssd-retain (vector index persistence)</li><li>Volume snapshots: nightly via Velero + offsite copy</li></ul></div>
+      <div class="infra-card"><div class="infra-title">🌍 HA / DR</div><ul class="infra-list"><li>Active-active across 2 regions (primary + DR)</li><li>PostgreSQL: Patroni HA + streaming replication</li><li>Redis Sentinel / Cluster mode (3 nodes)</li><li>MinIO distributed mode (4+ nodes, erasure set)</li><li>Qdrant: raft-based cluster replication</li><li>RTO: &lt;5 min · RPO: &lt;1 min</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LAYER 7 — OBSERVABILITY ══ -->
+<div class="section">
+  <div class="section-title">Layer 7 — Observability (Delivered via Sidecar + Platform)</div>
+  <div class="layer layer-obs">
+    <div class="layer-label">Metrics · Traces · Logs · Alerting · Dashboards — all injected without app code changes</div>
+    <div class="comp-grid g4" style="gap:10px">
+      <div class="comp"><div class="comp-icon">📈</div><div class="comp-name">Prometheus + Thanos</div><div class="comp-tech">Scrape via OTEL sidecar /metrics</div><div class="comp-desc">Scrapes from OTEL Collector sidecar. Thanos for multi-cluster federation and 90-day retention. Custom metrics: LLM token usage, LangGraph node latency, agent critique loops.</div><div class="comp-tags"><span class="tag tag-amber">Prometheus</span><span class="tag tag-blue">Thanos</span></div></div>
+      <div class="comp"><div class="comp-icon">📊</div><div class="comp-name">Grafana Dashboards</div><div class="comp-tech">Grafana 10 · Provisioned via ConfigMap</div><div class="comp-desc">Service latency P50/P95/P99, workflow throughput, LLM token cost, LangGraph node execution time, agent critique cycle count, task completion rate, compliance KPIs.</div><div class="comp-tags"><span class="tag tag-rose">Grafana</span><span class="tag tag-cyan">Loki</span></div></div>
+      <div class="comp"><div class="comp-icon">🔭</div><div class="comp-name">Jaeger / Tempo</div><div class="comp-tech">OTEL sidecar → Jaeger backend</div><div class="comp-desc">Full trace from browser → ingress → service → LangGraph node → LLM call → response. workflow_instance_id propagated as baggage. LangGraph node spans nested under parent workflow trace.</div><div class="comp-tags"><span class="tag tag-purple">OTEL</span><span class="tag tag-amber">Jaeger</span></div></div>
+      <div class="comp"><div class="comp-icon">📜</div><div class="comp-name">Loki + Fluent Bit</div><div class="comp-tech">Fluent Bit DaemonSet → Loki</div><div class="comp-desc">Structured JSON logs from all pods. LogQL queries in Grafana. Fluent Bit DaemonSet (not per-pod) tails /var/log/containers. 30-day hot, 1-year cold in MinIO.</div><div class="comp-tags"><span class="tag tag-green">Loki</span><span class="tag tag-blue">Fluent Bit</span></div></div>
+      <div class="comp"><div class="comp-icon">🚨</div><div class="comp-name">Alertmanager</div><div class="comp-tech">PagerDuty · Slack · OpsGenie</div><div class="comp-desc">Error rate &gt;1%, P95 &gt;2s, pod restarts &gt;3, DB connections &gt;80%, LLM error rate &gt;5%, critique loops &gt;2 (possible LLM quality issue). Critical→PagerDuty, warn→Slack.</div><div class="comp-tags"><span class="tag tag-rose">Alertmanager</span><span class="tag tag-cyan">PagerDuty</span></div></div>
+      <div class="comp"><div class="comp-icon">🏥</div><div class="comp-name">Health Probes</div><div class="comp-tech">K8s Liveness + Readiness + Startup</div><div class="comp-desc">Every service: <code>/healthz</code> (liveness) + <code>/readyz</code> (readiness — includes DB, Redis, Qdrant checks). Startup probe: 30s delay for Alembic migration + LangGraph graph compilation.</div><div class="comp-tags"><span class="tag tag-green">Liveness</span><span class="tag tag-amber">Readiness</span></div></div>
+      <div class="comp"><div class="comp-icon">⚡</div><div class="comp-name">Pyroscope</div><div class="comp-tech">Continuous profiling — Python</div><div class="comp-desc">Always-on CPU/memory profiling for Python services. Flame graphs in Grafana. LangGraph node executor hot paths profiled. Helps identify slow chains and memory-heavy agent state.</div><div class="comp-tags"><span class="tag tag-purple">Pyroscope</span><span class="tag tag-blue">FlameGraph</span></div></div>
+      <div class="comp"><div class="comp-icon">💰</div><div class="comp-name">OpenCost / LLM Cost</div><div class="comp-tech">OpenCost + custom token cost metrics</div><div class="comp-desc">Per-namespace K8s cost + LLM API spend per agent_type. Budget alerts. LangChain token callback aggregates usage per workflow instance into Prometheus gauge.</div><div class="comp-tags"><span class="tag tag-amber">OpenCost</span><span class="tag tag-green">Token Cost</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LAYER 8 — CI/CD ══ -->
+<div class="section">
+  <div class="section-title">Layer 8 — CI/CD Pipeline & Developer Experience</div>
+  <div class="layer layer-cicd">
+    <div class="layer-label">GitHub Actions · ArgoCD · Quality Gates · AI-aware Testing</div>
+    <div class="comp-grid g2" style="gap:14px">
+      <div>
+        <div class="layer-label" style="margin-bottom:10px">CI Pipeline (GitHub Actions)</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="flow-row">
+            <div class="flow-node" style="background:#1e293b;border-color:#4f46e5">📤 PR Push</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🔍 Lint + Type Check</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🧪 Unit Tests</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🔗 Integration Tests</div>
+          </div>
+          <div class="flow-row" style="padding-left:40px">
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🤖 LangChain chain tests</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🕸️ LangGraph graph tests</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🛡️ SAST (Bandit)</div>
+          </div>
+          <div class="flow-row" style="padding-left:80px">
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🐳 Docker Build</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🔬 Trivy Scan</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node" style="background:#14532d;border-color:#22c55e">📦 Push + cosign Sign</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="layer-label" style="margin-bottom:10px">CD Pipeline (ArgoCD GitOps)</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="flow-row">
+            <div class="flow-node" style="background:#1e293b;border-color:#22c55e">🏷️ Image Tagged</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">📝 Update Helm Values</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🔀 PR to gitops-repo</div>
+          </div>
+          <div class="flow-row" style="padding-left:40px">
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">✅ Auto-merge staging</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🚀 ArgoCD sync</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">🧪 Smoke + Agent E2E</div>
+          </div>
+          <div class="flow-row" style="padding-left:80px">
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">👁️ Manual Approval</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node" style="background:#4c1d95;border-color:#a855f7">🌐 Prod Deploy</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="comp-grid g4" style="gap:10px;margin-top:14px">
+      <div class="comp" style="background:var(--bg)"><div class="comp-name">🧪 Agent Test Strategy</div><div class="comp-desc">LangChain: unit-test chains with mock LLM (FakeListChatModel). LangGraph: test node functions in isolation + full graph with checkpointer snapshot. DeepAgents: integration test with real LLM in CI (gated, billed, 5 runs/PR max).</div><div class="comp-tags"><span class="tag tag-purple">FakeListChatModel</span><span class="tag tag-amber">LangGraph test</span></div></div>
+      <div class="comp" style="background:var(--bg)"><div class="comp-name">🔒 Security Scanning</div><div class="comp-desc">Bandit (Python SAST), Semgrep custom rules for prompt-injection patterns, Trivy (container), OWASP ZAP (DAST on staging), Dependabot for langchain/langgraph dep updates.</div><div class="comp-tags"><span class="tag tag-rose">Bandit</span><span class="tag tag-amber">Semgrep</span></div></div>
+      <div class="comp" style="background:var(--bg)"><div class="comp-name">📋 Quality Gates</div><div class="comp-desc">SonarQube on every PR. Block merge if: new bugs, test coverage &lt;80%, or LangGraph graph test failures. Agent output quality gate: critique_score must average &gt;0.85 across test suite.</div><div class="comp-tags"><span class="tag tag-amber">SonarQube</span><span class="tag tag-green">Coverage 80%</span></div></div>
+      <div class="comp" style="background:var(--bg)"><div class="comp-name">🛠️ Dev Experience</div><div class="comp-desc">Docker Compose: full stack including Qdrant + Ollama (local LLM). LLM_ADAPTER=mock for unit tests. Vite hot-reload proxy. devcontainer.json. LangSmith local tracing in dev.</div><div class="comp-tags"><span class="tag tag-blue">Docker Compose</span><span class="tag tag-purple">LangSmith</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SECURITY ══ -->
+<div class="section">
+  <div class="section-title">Cross-Cutting — Security Architecture (GxP / 21 CFR Part 11 / Zero Trust)</div>
+  <div class="layer" style="background:var(--surface);border-color:#f43f5e44">
+    <div class="sec-grid">
+      <div class="sec-card"><div class="sec-title">🔑 Identity & Access</div>
+        <div class="sec-item">JWT (HS256/RS256) with 8h expiry + refresh token</div><div class="sec-item">Role-based: admin / qa_manager / operator</div><div class="sec-item">bcrypt password hashing (cost factor 12)</div><div class="sec-item">OIDC integration (Keycloak / Okta) via oauth2-proxy sidecar</div><div class="sec-item">Token revocation via Redis blacklist</div><div class="sec-item">MFA support via TOTP</div>
+      </div>
+      <div class="sec-card"><div class="sec-title">🌐 Network Security</div>
+        <div class="sec-item">mTLS between all services (Envoy sidecar)</div><div class="sec-item">NetworkPolicy: deny-all default + explicit allows</div><div class="sec-item">LLM gateway internal-only (no external ingress)</div><div class="sec-item">WAF rules on ingress (OWASP CRS)</div><div class="sec-item">Qdrant: internal-only, no external exposure</div><div class="sec-item">VPC with private subnets for all data stores</div>
+      </div>
+      <div class="sec-card"><div class="sec-title">📋 GxP Compliance</div>
+        <div class="sec-item">21 CFR Part 11: electronic records + e-signatures</div><div class="sec-item">Hash-chained audit log (SHA-256 prev_hash)</div><div class="sec-item">eSign: meaning, reason, re-auth required</div><div class="sec-item">All LLM calls audited to audit-core (AuditCallbackHandler)</div><div class="sec-item">LangGraph state checkpoints = tamper-evident workflow history</div><div class="sec-item">SOC 2 Type II controls mapped to services</div>
+      </div>
+      <div class="sec-card"><div class="sec-title">🤖 AI / LLM Security</div>
+        <div class="sec-item">Prompt injection detection via Semgrep rules in CI</div><div class="sec-item">Model output validated against Pydantic schemas before use</div><div class="sec-item">LLM model allow-list enforced in gateway (no arbitrary models)</div><div class="sec-item">DeepAgent tool calls scoped by role — read-only SQL only</div><div class="sec-item">Max token limits enforced per agent type</div><div class="sec-item">No PII in prompts — data pseudonymised before LLM call</div>
+      </div>
+      <div class="sec-card"><div class="sec-title">🔐 Data Security</div>
+        <div class="sec-item">Encryption at rest: AES-256 for all volumes</div><div class="sec-item">Encryption in transit: TLS 1.3 everywhere</div><div class="sec-item">PII fields column-encrypted (Fernet) in PostgreSQL</div><div class="sec-item">Vault dynamic secrets — no long-lived credentials</div><div class="sec-item">MinIO SSE-S3 for object encryption</div><div class="sec-item">Qdrant payloads encrypted at rest</div>
+      </div>
+      <div class="sec-card"><div class="sec-title">🕵️ Threat Detection</div>
+        <div class="sec-item">Falco: syscall anomaly detection (sidecar LLM exfil detection)</div><div class="sec-item">Rate limiting: Redis counters + Envoy rate-limit filter</div><div class="sec-item">SIEM integration via audit event stream</div><div class="sec-item">Automated CVE patching via Renovate bot</div><div class="sec-item">Anomalous LLM token spend triggers alert (possible prompt injection)</div><div class="sec-item">Penetration testing: quarterly schedule</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SERVICE INTERACTION MAP ══ -->
+<div class="section">
+  <div class="section-title">Service Interaction & Communication Map</div>
+  <div class="layer" style="background:var(--surface)">
+    <table class="conn-table" style="border-radius:10px;overflow:hidden">
+      <thead><tr><th>From</th><th>To</th><th>Protocol</th><th>When</th><th>Pattern</th></tr></thead>
+      <tbody>
+        <tr><td>Browser</td><td>NGINX Ingress</td><td><span class="method m-rest">HTTPS</span></td><td>All user actions</td><td>REST + JWT Bearer</td></tr>
+        <tr><td>workflow-engine</td><td>task-service</td><td><span class="method m-rest">HTTP</span></td><td>Task node reached</td><td>POST /v1/tasks (Envoy mTLS)</td></tr>
+        <tr><td>workflow-engine</td><td>agent-service</td><td><span class="method m-rest">HTTP</span></td><td>agent_step node</td><td>POST /v1/agents/invoke → LangGraph / LangChain / DeepAgents</td></tr>
+        <tr><td>agent-service (LangGraph)</td><td>PostgreSQL</td><td><span class="method m-sql">TCP/SQL</span></td><td>Every graph node</td><td>PostgresSaver checkpoint after each node</td></tr>
+        <tr><td>agent-service (LangChain RAG)</td><td>Qdrant</td><td><span class="method m-grpc">gRPC</span></td><td>RAG retrieval step</td><td>VectorStore.similarity_search()</td></tr>
+        <tr><td>agent-service (DeepAgents)</td><td>Qdrant</td><td><span class="method m-grpc">gRPC</span></td><td>Episodic memory recall</td><td>Collection: deviation_history semantic search</td></tr>
+        <tr><td>agent-service</td><td>llm-gateway</td><td><span class="method m-rest">HTTP</span></td><td>Every LLM call</td><td>POST /v1/chat/completions (httpx async, Envoy mTLS)</td></tr>
+        <tr><td>llm-gateway</td><td>OpenAI / Anthropic / Ollama</td><td><span class="method m-rest">HTTPS</span></td><td>Every LLM invocation</td><td>Provider REST API (httpx async)</td></tr>
+        <tr><td>task-service</td><td>workflow-engine</td><td><span class="method m-rest">HTTP</span></td><td>Task completed</td><td>POST /v1/instances/{id}/signal → resumes LangGraph if interrupted</td></tr>
+        <tr><td>All services</td><td>audit-core</td><td><span class="method m-rest">HTTP</span></td><td>Every significant action</td><td>POST /v1/events via AuditClient (fire-and-forget)</td></tr>
+        <tr><td>LangChain callbacks</td><td>audit-core</td><td><span class="method m-rest">HTTP</span></td><td>Every LLM call</td><td>AuditCallbackHandler.on_llm_end()</td></tr>
+        <tr><td>All services</td><td>OTEL Collector sidecar</td><td><span class="method m-grpc">gRPC</span></td><td>Every request span</td><td>OTLP exporter → localhost:4317 → Jaeger/Tempo</td></tr>
+        <tr><td>Fluent Bit DaemonSet</td><td>Loki + Elasticsearch</td><td><span class="method m-rest">HTTP</span></td><td>Continuous log tail</td><td>JSON parse → dual output plugin</td></tr>
+        <tr><td>Vault Agent sidecar</td><td>HashiCorp Vault</td><td><span class="method m-rest">HTTPS</span></td><td>Pod start + lease renewal</td><td>AppRole auth → KV read → file write to tmpfs</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ TECHNOLOGY REFERENCE ══ -->
+<div class="section">
+  <div class="section-title">Complete Technology Reference</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <details><summary>Frontend Stack</summary><div class="detail-body">
+      <div class="detail-kv"><div class="detail-k">Framework</div><div class="detail-v">React 18.3 + TypeScript 5.x</div></div>
+      <div class="detail-kv"><div class="detail-k">Build tool</div><div class="detail-v">Vite 5 (esbuild + Rollup)</div></div>
+      <div class="detail-kv"><div class="detail-k">Server state</div><div class="detail-v">TanStack Query v5 (react-query)</div></div>
+      <div class="detail-kv"><div class="detail-k">Client state</div><div class="detail-v">Zustand 4 + persist middleware</div></div>
+      <div class="detail-kv"><div class="detail-k">HTTP client</div><div class="detail-v">Axios (interceptors for JWT)</div></div>
+      <div class="detail-kv"><div class="detail-k">Charts</div><div class="detail-v">Recharts 2</div></div>
+      <div class="detail-kv"><div class="detail-k">Canvas editor</div><div class="detail-v">@xyflow/react v12 (React Flow)</div></div>
+      <div class="detail-kv"><div class="detail-k">Testing</div><div class="detail-v">Vitest + React Testing Library + Playwright</div></div>
+    </div></details>
+    <details><summary>Backend + Agentic Stack</summary><div class="detail-body">
+      <div class="detail-kv"><div class="detail-k">Framework</div><div class="detail-v">FastAPI 0.111 + Python 3.11</div></div>
+      <div class="detail-kv"><div class="detail-k">LangChain</div><div class="detail-v">langchain==0.3.x, langchain-openai, langchain-community</div></div>
+      <div class="detail-kv"><div class="detail-k">LangGraph</div><div class="detail-v">langgraph==0.2.x, langgraph-checkpoint-postgres</div></div>
+      <div class="detail-kv"><div class="detail-k">DeepAgents</div><div class="detail-v">deep-agents==1.x (multi-agent teams + episodic memory)</div></div>
+      <div class="detail-kv"><div class="detail-k">Vector DB client</div><div class="detail-v">qdrant-client (gRPC mode)</div></div>
+      <div class="detail-kv"><div class="detail-k">Embeddings</div><div class="detail-v">openai text-embedding-3-small (1536-dim)</div></div>
+      <div class="detail-kv"><div class="detail-k">Workflow engine</div><div class="detail-v">SpiffWorkflow 1.2.1 (BPMN 2.0)</div></div>
+      <div class="detail-kv"><div class="detail-k">ORM</div><div class="detail-v">SQLAlchemy 2 async + Alembic</div></div>
+      <div class="detail-kv"><div class="detail-k">Observability</div><div class="detail-v">opentelemetry-sdk + prometheus-fastapi-instrumentator</div></div>
+    </div></details>
+    <details><summary>Infrastructure & Sidecar Stack</summary><div class="detail-body">
+      <div class="detail-kv"><div class="detail-k">Orchestration</div><div class="detail-v">Kubernetes 1.29+ (CNCF-conformant)</div></div>
+      <div class="detail-kv"><div class="detail-k">Service mesh</div><div class="detail-v">Istio 1.20 + Envoy sidecar (auto-injected)</div></div>
+      <div class="detail-kv"><div class="detail-k">Secrets sidecar</div><div class="detail-v">HashiCorp Vault Agent (annotation-driven injection)</div></div>
+      <div class="detail-kv"><div class="detail-k">OTEL sidecar</div><div class="detail-v">opentelemetry-collector-contrib (DaemonSet or sidecar)</div></div>
+      <div class="detail-kv"><div class="detail-k">Log forwarder</div><div class="detail-v">Fluent Bit DaemonSet → Loki + Elasticsearch</div></div>
+      <div class="detail-kv"><div class="detail-k">Auth sidecar</div><div class="detail-v">oauth2-proxy (OIDC session gate)</div></div>
+      <div class="detail-kv"><div class="detail-k">GitOps</div><div class="detail-v">ArgoCD 2.x (App-of-Apps)</div></div>
+      <div class="detail-kv"><div class="detail-k">Package mgmt</div><div class="detail-v">Helm 3 (chart per service + umbrella)</div></div>
+      <div class="detail-kv"><div class="detail-k">Policy</div><div class="detail-v">OPA + Kyverno admission webhooks</div></div>
+      <div class="detail-kv"><div class="detail-k">Runtime security</div><div class="detail-v">Falco syscall detector + Trivy image scan</div></div>
+    </div></details>
+    <details><summary>Data & AI Infrastructure</summary><div class="detail-body">
+      <div class="detail-kv"><div class="detail-k">Primary DB</div><div class="detail-v">PostgreSQL 15 (Patroni HA + PgBouncer)</div></div>
+      <div class="detail-kv"><div class="detail-k">LangGraph store</div><div class="detail-v">PostgresSaver (langgraph-checkpoint-postgres)</div></div>
+      <div class="detail-kv"><div class="detail-k">Cache / queue</div><div class="detail-v">Redis 7 (Sentinel / Cluster)</div></div>
+      <div class="detail-kv"><div class="detail-k">Object storage</div><div class="detail-v">MinIO (S3-compatible, erasure coding)</div></div>
+      <div class="detail-kv"><div class="detail-k">Vector DB</div><div class="detail-v">Qdrant (HNSW index, gRPC, raft cluster)</div></div>
+      <div class="detail-kv"><div class="detail-k">Search</div><div class="detail-v">Elasticsearch 8 + Kibana + Logstash</div></div>
+      <div class="detail-kv"><div class="detail-k">LLM providers</div><div class="detail-v">OpenAI, Anthropic, Azure OpenAI, Ollama, AWS Bedrock</div></div>
+      <div class="detail-kv"><div class="detail-k">RAG ingestion</div><div class="detail-v">LangChain DocumentLoader + TextSplitter → Qdrant</div></div>
+    </div></details>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+  <div>
+    <div style="font-weight:700;color:var(--text)">MGP Manufacturing Governance Platform</div>
+    <div style="font-size:11px;color:var(--dim);margin-top:2px">Solution Architecture · Cloud-Agnostic · CNCF Stack · LangChain + LangGraph + DeepAgents · Sidecar Pattern · Generated 2026-06-14</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <span class="badge badge-blue">7 Microservices</span>
+    <span class="badge badge-purple">LangChain + LangGraph</span>
+    <span class="badge badge-rose">DeepAgents</span>
+    <span class="badge badge-amber">5 Sidecars per Pod</span>
+    <span class="badge badge-green">6 AI Agents</span>
+    <span class="badge badge-cyan">Zero Trust Security</span>
+    <span class="badge badge-amber">21 CFR Part 11</span>
+  </div>
+</div>
+
+</div><!-- /page -->
+</body>
+</html>

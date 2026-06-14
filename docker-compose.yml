@@ -1,0 +1,148 @@
+version: "3.9"
+
+x-common: &common
+  restart: unless-stopped
+  networks: [mgp]
+
+x-py-env: &py-env
+  MGP_ENV: ${MGP_ENV:-local}
+  AUDIT_CORE_URL: ${AUDIT_CORE_URL:-http://audit-core:8001}
+  IDENTITY_URL: ${IDENTITY_URL:-http://identity:8003}
+  ESIGN_URL: ${ESIGN_URL:-http://esign:8002}
+  WORKFLOW_URL: ${WORKFLOW_URL:-http://workflow-engine:8004}
+  TASK_URL: ${TASK_URL:-http://task-service:8005}
+  LLM_GATEWAY_URL: ${LLM_GATEWAY_URL:-http://llm-gateway:8007}
+  JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-in-prod-min-32-chars}
+  JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+  JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-480}
+  AUTH_ADAPTER: ${AUTH_ADAPTER:-stub}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+
+services:
+
+  # ── Audit Core ─────────────────────────────────────────────────────────────
+  audit-core:
+    <<: *common
+    build: ./services/audit-core
+    ports: ["8001:8001"]
+    environment:
+      <<: *py-env
+      DB_URL: ${AUDIT_DB_URL:-sqlite+aiosqlite:///./data/audit.db}
+    volumes:
+      - ./data/audit:/app/data
+
+  # ── E-Sign ─────────────────────────────────────────────────────────────────
+  esign:
+    <<: *common
+    build: ./services/esign
+    ports: ["8002:8002"]
+    depends_on: [audit-core, identity]
+    environment:
+      <<: *py-env
+      DB_URL: ${ESIGN_DB_URL:-sqlite+aiosqlite:///./data/esign.db}
+    volumes:
+      - ./data/esign:/app/data
+
+  # ── Identity ───────────────────────────────────────────────────────────────
+  identity:
+    <<: *common
+    build: ./services/identity
+    ports: ["8003:8003"]
+    depends_on: [audit-core]
+    environment:
+      <<: *py-env
+      DB_URL: ${IDENTITY_DB_URL:-sqlite+aiosqlite:///./data/identity.db}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@mgp.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
+      SEED_OPERATOR_EMAIL: ${SEED_OPERATOR_EMAIL:-operator@mgp.local}
+      SEED_OPERATOR_PASSWORD: ${SEED_OPERATOR_PASSWORD:-Operator123!}
+      SEED_QA_EMAIL: ${SEED_QA_EMAIL:-qa@mgp.local}
+      SEED_QA_PASSWORD: ${SEED_QA_PASSWORD:-QA123!}
+      SEED_AUDITOR_EMAIL: ${SEED_AUDITOR_EMAIL:-auditor@mgp.local}
+      SEED_AUDITOR_PASSWORD: ${SEED_AUDITOR_PASSWORD:-Auditor123!}
+    volumes:
+      - ./data/identity:/app/data
+
+  # ── Workflow Engine ────────────────────────────────────────────────────────
+  workflow-engine:
+    <<: *common
+    build: ./services/workflow-engine
+    ports: ["8004:8004"]
+    depends_on: [audit-core, identity, task-service]
+    environment:
+      <<: *py-env
+      DB_URL: ${WORKFLOW_DB_URL:-sqlite+aiosqlite:///./data/workflow.db}
+    volumes:
+      - ./data/workflow:/app/data
+
+  # ── Task Service ───────────────────────────────────────────────────────────
+  task-service:
+    <<: *common
+    build: ./services/task-service
+    ports: ["8005:8005"]
+    depends_on: [audit-core, identity]
+    environment:
+      <<: *py-env
+      DB_URL: ${TASK_DB_URL:-sqlite+aiosqlite:///./data/tasks.db}
+    volumes:
+      - ./data/tasks:/app/data
+
+  # ── LLM Gateway ───────────────────────────────────────────────────────────
+  llm-gateway:
+    <<: *common
+    build: ./services/llm-gateway
+    ports: ["8007:8007"]
+    depends_on: [audit-core]
+    environment:
+      <<: *py-env
+      LLM_ADAPTER: ${LLM_ADAPTER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-}
+      LLM_DEFAULT_MODEL: ${LLM_DEFAULT_MODEL:-llama3.2}
+      LLM_ALLOWED_MODELS: ${LLM_ALLOWED_MODELS:-llama3.2,llama3.1,mistral}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-4096}
+
+  # ── Agent Service ──────────────────────────────────────────────────────────
+  agent-service:
+    <<: *common
+    build: ./services/agent-service
+    ports: ["8006:8006"]
+    depends_on: [audit-core, llm-gateway, task-service]
+    environment:
+      <<: *py-env
+      DB_URL: ${AGENT_DB_URL:-sqlite+aiosqlite:///./data/agents.db}
+      OWN_DB_PATH: /app/data/agents.db
+      CROSS_DB_BASE: /app/data/cross
+    volumes:
+      - ./data/agents:/app/data
+      - ./data/docs:/app/data/docs
+      - ./data/identity:/app/data/cross/identity:ro
+      - ./data/workflow:/app/data/cross/workflow:ro
+      - ./data/tasks:/app/data/cross/tasks:ro
+      - ./data/audit:/app/data/cross/audit:ro
+
+  # ── UI ─────────────────────────────────────────────────────────────────────
+  ui:
+    <<: *common
+    build: ./packages/ui
+    ports: ["3000:3000"]
+    depends_on: [identity, workflow-engine, task-service]
+    environment:
+      VITE_API_BASE: http://localhost:8000
+      VITE_IDENTITY_URL: http://localhost:8003
+      VITE_WORKFLOW_URL: http://localhost:8004
+      VITE_TASK_URL: http://localhost:8005
+      VITE_AUDIT_URL: http://localhost:8001
+
+  # ── Nginx API Gateway ──────────────────────────────────────────────────────
+  nginx:
+    <<: *common
+    image: nginx:1.25-alpine
+    ports: ["8000:80"]
+    depends_on: [audit-core, identity, esign, workflow-engine, task-service, agent-service, llm-gateway]
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+networks:
+  mgp:
+    driver: bridge

@@ -1,0 +1,97 @@
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+build/
+.eggs/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# mypy / ruff / coverage / pytest
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+coverage.xml
+
+# ── Node / Frontend ──────────────────────────────────────────────────────────
+node_modules/
+packages/ui/dist/
+packages/ui/.vite/
+.npm
+*.tsbuildinfo
+
+# ── Environment / Secrets ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+!.env.example
+
+# ── SQLite databases ─────────────────────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ── Runtime data directories ─────────────────────────────────────────────────
+data/
+logs/
+
+# ── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.orig
+
+# ── Deployment artefacts ─────────────────────────────────────────────────────
+ui-dist/
+*.pem
+*.key
+*.crt
+
+# ── Debug / scratch scripts (root-level only) ────────────────────────────────
+/debug_*.py
+/check_*.py
+/check_ctx.py
+/check_graph.py
+/check_instance.py
+/check_workflow.py
+/debug_executor.py
+/debug_live.py
+/debug_spiff.py
+/test_spiff.py
+
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+.local-pids.json
+*.log
+*.pid
+*.seed
+*.bak
+*.tmp

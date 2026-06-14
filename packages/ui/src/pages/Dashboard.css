@@ -1,0 +1,70 @@
+/* ── KPI row ─────────────────────────────────────────────────────────────── */
+.dash-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.dash-kpi-card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.dash-kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.dash-kpi-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.dash-kpi-body { flex: 1; min-width: 0; }
+.dash-kpi-label { font-size: 11px; font-weight: 600; color: var(--color-slate-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+.dash-kpi-number { font-size: 30px; font-weight: 800; line-height: 1.1; }
+.dash-kpi-sub { font-size: 11px; color: var(--color-slate-400); margin-top: 2px; }
+
+/* ── Main content row ────────────────────────────────────────────────────── */
+.dash-main-row {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+  align-items: start;
+}
+.dash-activity-col { height: 100%; }
+.dash-right-col { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* ── Activity rows ───────────────────────────────────────────────────────── */
+.dash-activity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.dash-activity-row:last-child { border-bottom: none; }
+.dash-activity-icon {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ── Charts row ──────────────────────────────────────────────────────────── */
+.dash-charts-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 1100px) {
+  .dash-kpi-row       { grid-template-columns: repeat(2, 1fr); }
+  .dash-main-row      { grid-template-columns: 1fr; }
+  .dash-charts-row    { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 700px) {
+  .dash-kpi-row    { grid-template-columns: 1fr; }
+  .dash-charts-row { grid-template-columns: 1fr; }
+}
